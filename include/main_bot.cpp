@@ -87,7 +87,10 @@ void loop() {
 			// set next ok packet to start ok packet.
 
 			// initialize drive with pin values:
-			bot::drive::init(pin_ena, pin_in1, pin_in2, pin_enb, pin_in3, pin_in4);
+			bot::drive::init_motor(0, pin_ena, pin_in1, pin_in2);
+			bot::drive::init_motor(1, pin_enb, pin_in3, pin_in4);
+
+			bot::drive::set_drive_motors(0, 1);
 
 			PRINT("initializing drive { ");
 			PRINT(pin_ena);

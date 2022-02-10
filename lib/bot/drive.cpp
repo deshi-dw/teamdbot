@@ -1,119 +1,156 @@
 #include "drive.h"
 
 #include <Arduino.h>
+#include "Servo.h"
 
 namespace bot {
 namespace drive {
 
-static bool is_right_init;
-static bool is_left_init;
+static struct motor {
+	int pin_en;
+	int pin_in1;
+	int pin_in2;
 
-static unsigned int pin_ena;
-static unsigned int pin_in1;
-static unsigned int pin_in2;
+	int last_speed;
 
-static unsigned int pin_enb;
-static unsigned int pin_in3;
-static unsigned int pin_in4;
+	bool used;
+} motors[DRIVE_MAX_MOTORS];
 
-void init(int pin_ena, int pin_in1, int pin_in2,
-		  int pin_enb, int pin_in3, int pin_in4) {
-	init_right(pin_ena, pin_in1, pin_in2);
-	init_left(pin_enb, pin_in3, pin_in4);
+static struct servo {
+	int pin;
+
+	Servo servo;
+
+	bool used;
+} servos[DRIVE_MAX_SERVOS];
+
+static int left_id = -1;
+static int right_id = -1;
+
+static bool is_motor_id_valid(int id) {
+	return id >= 0 && id < DRIVE_MAX_MOTORS;
 }
 
-void init_left(int pin_enb, int pin_in3, int pin_in4) {
-	pinMode(pin_ena, OUTPUT);
-	pinMode(pin_in1, OUTPUT);
-	pinMode(pin_in2, OUTPUT);
-
-	analogWrite(pin_ena, 0);
-	is_left_init = true;
-}
-void init_right(int pin_ena, int pin_in1, int pin_in2) {
-	pinMode(pin_enb, OUTPUT);
-	pinMode(pin_in3, OUTPUT);
-	pinMode(pin_in4, OUTPUT);
-
-	analogWrite(pin_enb, 0);
-	is_right_init = true;
+static bool is_servo_id_valid(int id) {
+	return id >= 0 && id < DRIVE_MAX_SERVOS;
 }
 
-void set_left(float speed) {
-	if(! is_left_init) {
+bool init_motor(int id, int pin_en, int pin_in1, int pin_in2) {
+	if(( ! is_motor_id_valid(id)) || motors[id].used) {
+		return false;
+	}
+
+	// set motor pins.
+	motors[id].pin_en = pin_en;
+	motors[id].pin_in1 = pin_in1;
+	motors[id].pin_in2 = pin_in2;
+
+	// set pin modes for motor pins.
+	pinMode(motors[id].pin_en, OUTPUT);
+	pinMode(motors[id].pin_in1, OUTPUT);
+	pinMode(motors[id].pin_in2, OUTPUT);
+
+	// sanity check that the motor speed is zero.
+	analogWrite(pin_en, 0);
+
+	motors[id].used = true;
+
+	return true;
+}
+
+bool init_servo(int id, int pin) {
+	if(( ! is_servo_id_valid(id)) || servos[id].used) {
+		return false;
+	}
+
+	// set servo pins.
+	servos[id].pin = pin;
+
+	// attach servo pin to the servo controller.
+	servos[id].servo.attach(pin);
+
+	// TODO think about not resetting the servos position as it might not be
+//          needed and even counter productive.
+	// reset servo to zero.
+	servos[id].servo.write(0);
+
+}
+
+
+void set_motor(int id, float speed) {
+	if(( ! is_motor_id_valid(id)) || ! motors[id].used) {
 		return;
 	}
 
 	if(speed == 0.0f) {
-		digitalWrite(pin_in1, LOW);
-		digitalWrite(pin_in2, LOW);
-		analogWrite(pin_ena, 0);
+		digitalWrite(motors[id].pin_in1, LOW);
+		digitalWrite(motors[id].pin_in2, LOW);
+		analogWrite(motors[id].pin_en, 0);
 
 		return;
 	}
 	else if(speed < 0.0f) {
 		// set direction of the motor rotation to inverse.
-		digitalWrite(pin_in1, LOW);
-		digitalWrite(pin_in2, HIGH);
+		digitalWrite(motors[id].pin_in1, LOW);
+		digitalWrite(motors[id].pin_in2, HIGH);
 
 		// make speed absolute.
 		speed *= -1.0f;
 	}
 	else {
 		// set direction of the motor rotation to normal.
-		digitalWrite(pin_in1, HIGH);
-		digitalWrite(pin_in2, LOW);
+		digitalWrite(motors[id].pin_in1, HIGH);
+		digitalWrite(motors[id].pin_in2, LOW);
 	}
 
-	analogWrite(pin_ena, (int) (speed * 255.0));
+	analogWrite(motors[id].pin_en, (int) (speed * 255.0));
 }
-void set_right(float speed) {
-	if(! is_right_init) {
+
+void set_servo(int id, int angle) {
+	if(( ! is_servo_id_valid(id)) || ! servos[id].used) {
 		return;
 	}
 
-	if(speed == 0.0f) {
-		digitalWrite(pin_in3, LOW);
-		digitalWrite(pin_in4, LOW);
-		analogWrite(pin_enb, 0);
+	// clamp angle between 0 and 180.
+	angle = angle < 0 ? 0 : angle > 180 ? 180 : angle;
 
-		return;
-	}
-	else if(speed < 0.0f) {
-		// set direction of the motor rotation to inverse.
-		digitalWrite(pin_in3, LOW);
-		digitalWrite(pin_in4, HIGH);
-
-		// make speed absolute.
-		speed *= -1.0f;
-	}
-	else {
-		// set direction of the motor rotation to normal.
-		digitalWrite(pin_in3, HIGH);
-		digitalWrite(pin_in4, LOW);
-	}
-
-	analogWrite(pin_enb, (int) (speed * 255.0));
+	// write angle to servo.
+	servos[id].servo.write(angle);
 }
 
-float get_left() {
-	if(! is_left_init) {
+float get_motor(int id) {
+	if(( ! is_motor_id_valid(id)) || ! motors[id].used) {
 		return 0.0f;
 	}
 
-	return (analogRead(pin_ena) / 255.0f - 0.5f) * 2.0f;
+	// TODO think about doing some analog read here, though it probably isn't
+	//      needed.
+
+	return motors[id].last_speed;
 }
-float get_right() {
-	if(! is_right_init) {
-		return 0.0f;
+
+int get_servo(int id) {
+	if(( ! is_servo_id_valid(id)) || ! servos[id].used) {
+		return -1;
 	}
 
-	return (analogRead(pin_enb) / 255.0f - 0.5f) * 2.0f;
+	return servos[id].servo.read();
+}
+
+bool set_drive_motors(int lid, int rid) {
+	if( ! is_motor_id_valid(lid) || ! is_motor_id_valid(rid)) {
+		return false;
+	}
+
+	left_id = lid;
+	right_id = rid;
+
+	return true;
 }
 
 void tank(float left, float right) {
-	set_left(left);
-	set_right(right);
+	set_motor(left_id, left);
+	set_motor(right_id, right);
 }
 
 void arcade(float speed, float turn, float range) {
@@ -134,7 +171,6 @@ void arcade(float speed, float turn, float range) {
 	const float right = (v - w) / 2;
 
 	tank(left, right);
-
 }
 
 } // namespace drive
