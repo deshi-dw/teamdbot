@@ -1,0 +1,14 @@
+-I
+include
+-I
+/home/user/.platformio/packages/framework-arduino-avr/cores/arduino/
+-I
+lib/bot
+-I
+lib/nrf24
+-I
+lib/servo
+-D
+UBRRH
+-D
+HOST
