@@ -74,6 +74,7 @@ bool init_servo(int id, int pin) {
 	// reset servo to zero.
 	servos[id].servo.write(0);
 
+	return true;
 }
 
 

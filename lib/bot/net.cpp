@@ -7,12 +7,6 @@ namespace net {
 
 static RF24 radio;
 
-static char addr_local[6];
-static char addr_remote[6];
-
-static bool is_listening = false;
-static bool is_sending_ok = false;
-
 bool init(uint32_t pin_ce, uint32_t pin_csn, const char* local,
 		  const char* remote) {
 	// check local string size.
