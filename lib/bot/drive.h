@@ -13,7 +13,7 @@ void set_servo(int id, int angle);
 float get_motor(int id);
 int get_servo(int id);
 
-bool set_drive_motors(int lid, int rid)
+bool set_drive_motors(int lid, int rid);
 
 void tank(float left, float right);
 void arcade(float speed, float turn, float range = 1.0f);

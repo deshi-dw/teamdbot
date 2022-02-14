@@ -26,14 +26,14 @@ bot::pkt::init pkt_init = {
 	PKT_INIT_ID,
 
 	// right motor pins:
-	3, // ena
-	2, // in1
-	4, // in2
+	9,  // ena
+	4,  // in1
+	5,  // in2
 
 	// left motor pins:
-	9, // enb
-	5, // in3
-	6  // in4
+	10, // enb
+	2,  // in3
+	3   // in4
 };
 
 bot::pkt::start pkt_start = {
@@ -107,8 +107,8 @@ void loop() {
 
 	bot::input::update();
 
-	pkt_input.drive_y = bot::input::get_stick_y(0);
-	pkt_input.drive_x = bot::input::get_stick_x(0);
+	pkt_input.drive_y = bot::input::get_stick_y(0) * 2;
+	pkt_input.drive_x = bot::input::get_stick_x(0) * 2;
 
 	if(bot::input::get_stick_down(0)) {
 		PRINTLN("STICK DOWN.");
