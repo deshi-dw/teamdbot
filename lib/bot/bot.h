@@ -36,6 +36,21 @@ struct init {
 	uint8_t pin_enb;
 	uint8_t pin_in3;
 	uint8_t pin_in4;
+
+	// uint8_t pin_right1
+	// uint8_t pin_right2;
+	// uint8_t pin_right_en;
+
+	// uint8_t pin_left1;
+	// uint8_t pin_left2;
+	// uint8_t pin_left_en;
+
+	// uint8_t pin_elev1;
+	// uint8_t pin_elev2;
+
+	// uint8_t pin_spin1;
+	// uint8_t pin_spin2;
+
 };
 
 struct start {

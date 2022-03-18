@@ -5,46 +5,62 @@
 
 #include "bot.h"
 
-/*
+/* NRF24l01+ RADIO
  *
- * CE   (yellow)  7
+ * CE   (yellow)  9
  * SCK  (green)  13
  * MISO (purple) 12
  *
- * CSN  (orange)  8
+ * CSN  (orange) 10
  * MOSI (blue)   11
  */
 
-const unsigned int pin_ce = 7;
-const unsigned int pin_csn = 8;
+const unsigned int pin_ce = 9;
+const unsigned int pin_csn = 10;
+
+/* JOYSTICK RIGHT
+ *
+ * VRX  (brown)  A0
+ * VRY  (grey)   A1
+ * SW   (purple)  7
+ */
 
 const unsigned int pin_vrx1 = A0;
 const unsigned int pin_vry1 = A1;
-const unsigned int pin_sw1 = 6;
+const unsigned int pin_sw1 = 7;
+
+/* JOYSTICK LEFT
+ *
+ * VRX  (yellow)  A2
+ * VRY  (yellow)  A3
+ */
+
+const unsigned int pin_vrx2 = A2;
+const unsigned int pin_vry2 = A3;
 
 bot::pkt::init pkt_init = {
 	PKT_INIT_ID,
 
 	// right motor pins:
-	9,  // ena
-	4,  // in1
-	5,  // in2
+	10,  // ena
+	A0,  // in1
+	A1,  // in2
 
 	// left motor pins:
-	10, // enb
-	2,  // in3
-	3   // in4
+	10,  // enb
+	A2,  // in3
+	A3   // in4
 };
 
 bot::pkt::start pkt_start = {
-	PKT_START_ID,
+	.id = PKT_START_ID,
 
 	// auto time in milliseconds:
-	5000,
+	.auto_drive_ms = 5000,
 
 	// left and right speeds:
-	0.5,
-	0.5
+	.auto_left_speed = 1.0,
+	.auto_right_speed = 1.0
 };
 
 void setup() {
@@ -64,7 +80,7 @@ void setup() {
 	}
 
 	bot::input::init_stick(0, pin_vrx1, pin_vry1, pin_sw1);
-	// bot::input::init_stick(1, pin_vrx2, pin_vry2, pin_sw2);
+	bot::input::init_stick(1, pin_vrx2, pin_vry2, -1);
 
 	PRINT("sending robot init packet...");
 
@@ -91,6 +107,8 @@ void setup() {
 
 	PRINTLN("sent!");
 
+	delay(pkt_start.auto_drive_ms);
+
 	PRINTLN("starting control loop:");
 }
 
@@ -105,6 +123,12 @@ void loop() {
 	// pkt_input.drive_y = (float)random(-1000, 1000) / 1000.0f;
 	// pkt_input.drive_x = (float)random(-1000, 1000) / 1000.0f;
 
+	// TODO add joystick deadzone.
+	// TODO add joystick ramp. (square input?)
+	// TODO hook driving up to both joysticks.
+	// TODO make pressing one joystick button starts autonomous while the other
+	//      just starts user driving.
+
 	bot::input::update();
 
 	pkt_input.drive_y = bot::input::get_stick_y(0) * 2;
@@ -114,8 +138,11 @@ void loop() {
 		PRINTLN("STICK DOWN.");
 	}
 
+	// TODO consider if input packet should be reliable or not.
 	// send input packet.
-	bot::net::send(&pkt_input, sizeof(pkt_input));
+	if(! bot::net::send(&pkt_input, sizeof(pkt_input), true)) {
+		PRINTLN("lost connection to the robot.");
+	}
 
 	// sleep for a lil' bit.
 	delay(10);

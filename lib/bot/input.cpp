@@ -51,7 +51,7 @@ void update() {
 
 		int x = analogRead(sticks[i].pin_vrx);
 		int y = analogRead(sticks[i].pin_vry);
-		int sw = digitalRead(sticks[i].pin_sw);
+		int sw = sticks[i].pin_sw != -1 ? digitalRead(sticks[i].pin_sw) : 0;
 
 		sticks[i].value_x = (((float)x) / 1023.0f - 0.5f) * 2.0f;
 		sticks[i].value_y = (((float)y) / 1023.0f - 0.5f) * 2.0f;
