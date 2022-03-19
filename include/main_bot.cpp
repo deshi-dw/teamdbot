@@ -1,9 +1,8 @@
+#include "RF24.h"
+#include "bot.hpp"
+
 #include <Arduino.h>
 #include <SPI.h>
-
-#include "RF24.h"
-
-#include "bot.h"
 
 /*
  * CE   (white)   7
@@ -41,7 +40,7 @@ void setup() {
 	PRINT("  radio status...");
 
 	// start radio transmission.
-	if( ! bot::net::init(pin_ce, pin_csn, "TDbot", "TDcon")) {
+	if(! bot::net::init(pin_ce, pin_csn, "TDbot", "TDcon")) {
 		PRINTLN("BAD");
 		return;
 	}
@@ -56,87 +55,89 @@ void loop() {
 	// continue to receive message from the host.
 	if(bot::net::recv(buf, sizeof(buf))) {
 		switch(buf[0]) {
-		case PKT_INPUT_ID: {
-			if( ! is_init) {
+			case PKT_INPUT_ID: {
+				if(! is_init) {
+					break;
+				}
+
+				bot::pkt::input* pkt = (bot::pkt::input*) buf;
+
+				PRINT("driving arcade at ");
+				PRINT(pkt->drive_y);
+				PRINT(", ");
+				PRINT(pkt->drive_x);
+				PRINTLN(".");
+
+				// TODO store drive_x and drive_y and execute bot::drive::arcade
+				//      outside of getting an input packet.
+				bot::drive::arcade(pkt->drive_y, pkt->drive_x);
+			} break;
+
+			case PKT_INIT_ID: {
+				bot::pkt::init* pkt = (bot::pkt::init*) buf;
+
+				// set pins to init packet values.
+				pin_ena = pkt->mtr1.pin_ena;
+				pin_in1 = pkt->mtr1.pin_in1;
+				pin_in2 = pkt->mtr1.pin_in2;
+
+				pin_enb = pkt->mtr1.pin_enb;
+				pin_in3 = pkt->mtr1.pin_in3;
+				pin_in4 = pkt->mtr1.pin_in4;
+
+				// set next ok packet to start ok packet.
+
+				// initialize drive with pin values:
+				bot::drive::init_motor(0, pin_ena, pin_in1, pin_in2);
+				bot::drive::init_motor(1, pin_enb, pin_in3, pin_in4);
+
+				bot::drive::set_drive_motors(0, 1);
+
+				PRINT("initializing drive { ");
+				PRINT(pin_ena);
+				PRINT(", ");
+				PRINT(pin_in1);
+				PRINT(", ");
+				PRINT(pin_in2);
+				PRINT(", ");
+				PRINT(pin_enb);
+				PRINT(", ");
+				PRINT(pin_in3);
+				PRINT(", ");
+				PRINT(pin_in4);
+				PRINTLN(" }");
+
+				is_init = true;
+
+			} break;
+
+			case PKT_START_ID: {
+				if(! is_init) {
+					break;
+				}
+
+				PRINTLN("got start packet.");
+
+				bot::pkt::start* pkt = (bot::pkt::start*) buf;
+				unsigned long current = millis();
+
+				PRINT("starting autonomous for ");
+				PRINT(pkt->auto_drive_ms);
+				PRINT(" ms at a speed of ");
+				PRINT(pkt->auto_left_speed);
+				PRINT(", ");
+				PRINT(pkt->auto_right_speed);
+				PRINTLN(".");
+
+				do {
+					bot::drive::tank(pkt->auto_left_speed,
+									 pkt->auto_right_speed);
+				} while(millis() - current <= pkt->auto_drive_ms);
+
+			} break;
+
+			default:
 				break;
-			}
-
-			bot::pkt::input* pkt = (bot::pkt::input*)buf;
-
-			PRINT("driving arcade at ");
-			PRINT(pkt->drive_y);
-			PRINT(", ");
-			PRINT(pkt->drive_x);
-			PRINTLN(".");
-
-			bot::drive::arcade(pkt->drive_y, pkt->drive_x);
-		} break;
-
-		case PKT_INIT_ID: {
-			bot::pkt::init* pkt = (bot::pkt::init*)buf;
-
-			// set pins to init packet values.
-			pin_ena = pkt->pin_ena;
-			pin_in1 = pkt->pin_in1;
-			pin_in2 = pkt->pin_in2;
-
-			pin_enb = pkt->pin_enb;
-			pin_in3 = pkt->pin_in3;
-			pin_in4 = pkt->pin_in4;
-
-			// set next ok packet to start ok packet.
-
-			// initialize drive with pin values:
-			bot::drive::init_motor(0, pin_ena, pin_in1, pin_in2);
-			bot::drive::init_motor(1, pin_enb, pin_in3, pin_in4);
-
-			bot::drive::set_drive_motors(0, 1);
-
-			PRINT("initializing drive { ");
-			PRINT(pin_ena);
-			PRINT(", ");
-			PRINT(pin_in1);
-			PRINT(", ");
-			PRINT(pin_in2);
-			PRINT(", ");
-			PRINT(pin_enb);
-			PRINT(", ");
-			PRINT(pin_in3);
-			PRINT(", ");
-			PRINT(pin_in4);
-			PRINTLN(" }");
-
-			is_init = true;
-
-		} break;
-
-
-		case PKT_START_ID: {
-			if( ! is_init) {
-				break;
-			}
-
-			PRINTLN("got start packet.");
-
-			bot::pkt::start* pkt = (bot::pkt::start*)buf;
-			unsigned long current = millis();
-
-			PRINT("starting autonomous for ");
-			PRINT(pkt->auto_drive_ms);
-			PRINT(" ms at a speed of ");
-			PRINT(pkt->auto_left_speed);
-			PRINT(", ");
-			PRINT(pkt->auto_right_speed);
-			PRINTLN(".");
-
-			do {
-				bot::drive::tank(pkt->auto_left_speed, pkt->auto_right_speed);
-			}
-			while(millis() - current <= pkt->auto_drive_ms);
-
-		} break;
-
-		default: break;
 		}
 	}
 }

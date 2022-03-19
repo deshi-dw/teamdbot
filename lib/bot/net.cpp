@@ -1,4 +1,4 @@
-#include "net.h"
+#include "net.hpp"
 
 #include "RF24.h"
 
@@ -7,7 +7,9 @@ namespace net {
 
 static RF24 radio;
 
-bool init(uint32_t pin_ce, uint32_t pin_csn, const char* local,
+bool init(uint32_t pin_ce,
+		  uint32_t pin_csn,
+		  const char* local,
 		  const char* remote) {
 	// check local string size.
 	const char* local_ptr = local;
@@ -33,7 +35,7 @@ bool init(uint32_t pin_ce, uint32_t pin_csn, const char* local,
 		return false;
 	}
 
-	if( ! radio.isChipConnected()) {
+	if(! radio.isChipConnected()) {
 		return false;
 	}
 
@@ -49,8 +51,8 @@ bool init(uint32_t pin_ce, uint32_t pin_csn, const char* local,
 	radio.setPayloadSize(32);
 
 	// open pipes.
-	radio.openWritingPipe((uint8_t*)remote);
-	radio.openReadingPipe(1, (uint8_t*)local);
+	radio.openWritingPipe((uint8_t*) remote);
+	radio.openReadingPipe(1, (uint8_t*) local);
 
 	// start listening.
 	radio.startListening();
@@ -97,7 +99,7 @@ bool recv(void* buf, int size) {
 		radio.read(tmp_buf, sizeof(tmp_buf));
 
 		for(int i = size - 1; i >= 0; i--) {
-			((uint8_t*)buf)[i] = tmp_buf[i];
+			((uint8_t*) buf)[i] = tmp_buf[i];
 		}
 	}
 	else {

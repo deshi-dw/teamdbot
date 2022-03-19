@@ -1,7 +1,8 @@
-#include "drive.h"
+#include "drive.hpp"
+
+#include "Servo.h"
 
 #include <Arduino.h>
-#include "Servo.h"
 
 namespace bot {
 namespace drive {
@@ -36,7 +37,7 @@ static bool is_servo_id_valid(int id) {
 }
 
 bool init_motor(int id, int pin_en, int pin_in1, int pin_in2) {
-	if(( ! is_motor_id_valid(id)) || motors[id].used) {
+	if((! is_motor_id_valid(id)) || motors[id].used) {
 		return false;
 	}
 
@@ -59,7 +60,7 @@ bool init_motor(int id, int pin_en, int pin_in1, int pin_in2) {
 }
 
 bool init_servo(int id, int pin) {
-	if(( ! is_servo_id_valid(id)) || servos[id].used) {
+	if((! is_servo_id_valid(id)) || servos[id].used) {
 		return false;
 	}
 
@@ -70,16 +71,15 @@ bool init_servo(int id, int pin) {
 	servos[id].servo.attach(pin);
 
 	// TODO think about not resetting the servos position as it might not be
-//          needed and even counter productive.
+	//          needed and even counter productive.
 	// reset servo to zero.
 	servos[id].servo.write(0);
 
 	return true;
 }
 
-
 void set_motor(int id, float speed) {
-	if(( ! is_motor_id_valid(id)) || ! motors[id].used) {
+	if((! is_motor_id_valid(id)) || ! motors[id].used) {
 		return;
 	}
 
@@ -108,7 +108,7 @@ void set_motor(int id, float speed) {
 }
 
 void set_servo(int id, int angle) {
-	if(( ! is_servo_id_valid(id)) || ! servos[id].used) {
+	if((! is_servo_id_valid(id)) || ! servos[id].used) {
 		return;
 	}
 
@@ -120,7 +120,7 @@ void set_servo(int id, int angle) {
 }
 
 float get_motor(int id) {
-	if(( ! is_motor_id_valid(id)) || ! motors[id].used) {
+	if((! is_motor_id_valid(id)) || ! motors[id].used) {
 		return 0.0f;
 	}
 
@@ -131,7 +131,7 @@ float get_motor(int id) {
 }
 
 int get_servo(int id) {
-	if(( ! is_servo_id_valid(id)) || ! servos[id].used) {
+	if((! is_servo_id_valid(id)) || ! servos[id].used) {
 		return -1;
 	}
 
@@ -139,7 +139,7 @@ int get_servo(int id) {
 }
 
 bool set_drive_motors(int lid, int rid) {
-	if( ! is_motor_id_valid(lid) || ! is_motor_id_valid(rid)) {
+	if(! is_motor_id_valid(lid) || ! is_motor_id_valid(rid)) {
 		return false;
 	}
 
@@ -168,7 +168,7 @@ void arcade(float speed, float turn, float range) {
 	const float w = (range - abs(y)) * (x / range) + x;
 
 	// extract both the right and left speed.
-	const float left  = (v + w) / 2;
+	const float left = (v + w) / 2;
 	const float right = (v - w) / 2;
 
 	tank(left, right);
