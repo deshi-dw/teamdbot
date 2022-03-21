@@ -38,16 +38,21 @@ const unsigned int pin_vrx2 = A2;
 const unsigned int pin_vry2 = A3;
 
 bot::pkt::init pkt_init = {.id = PKT_INIT_ID,
-
-						   // right motor pins:
 						   .mtr1 = {.pin_ena = 10,
 									.pin_in1 = A0,
 									.pin_in2 = A1,
 
-									// left motor pins:
 									.pin_enb = 10,
 									.pin_in3 = A2,
-									.pin_in4 = A3}};
+									.pin_in4 = A3},
+
+						   .mtr2 = {.pin_ena = 0,
+									.pin_in1 = A4,
+									.pin_in2 = A5,
+
+									.pin_enb = 0,
+									.pin_in3 = 0,
+									.pin_in4 = 0}};
 
 bot::pkt::start pkt_start = {.id = PKT_START_ID,
 
@@ -117,6 +122,12 @@ static float stick_ramp(float value) {
 
 	// ramp based on bezier curve. function:
 	// C_{urve}(a,b,t)=3at+3t^2b+t^3-6at^2+3at^3-3t^3b
+	// bezier function:
+	// B_{ezier}(a,b,c,d,t)=a+3bt-3at+3t^2c+3at^2+t^3d-at^3-6bt^2+3bt^3-3t^3c
+	// Original equations:
+	// Bezier(a, b, c, d, t)=Lerp(Lerp(Lerp(a, b, t), Lerp(b, c, t), t),
+	//     Lerp(Lerp(b, c, t), Lerp(c, d, t), t), t)
+	// Lerp(a, b, t)=a + (b - a)t
 	return 3.88 * (value * value * value) - 5.46 * (value * value) +
 		   2.58 * value;
 }
